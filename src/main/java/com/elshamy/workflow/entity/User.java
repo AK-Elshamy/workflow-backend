@@ -37,6 +37,9 @@ public class User {
     @OneToMany(mappedBy = "owner")
     private Set<Project> ownedProjects = new HashSet<>();
 
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
     @ManyToMany(mappedBy = "members")
     private Set<Project> memberProjects = new HashSet<>();
@@ -96,6 +99,10 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public Set<Task> getAssignedTasks() {
