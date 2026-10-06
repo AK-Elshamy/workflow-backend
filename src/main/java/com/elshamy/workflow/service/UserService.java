@@ -7,7 +7,6 @@ import com.elshamy.workflow.enums.Role;
 import com.elshamy.workflow.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 
 @Service
 public class UserService {
@@ -18,8 +17,6 @@ public class UserService {
 
     public UserResponseDTO createUser(UserRequestDTO userRequestDTO){
         User user = new User(userRequestDTO.username(), userRequestDTO.email(), userRequestDTO.password(), Role.USER);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
         User savedUser = userRepository.save(user);
         return toDTO(savedUser);
     }
@@ -28,7 +25,7 @@ public class UserService {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getRole().toString(),
+                user.getRole(),
                 user.getCreatedAt(),
                 user.getUpdatedAt());
     }
