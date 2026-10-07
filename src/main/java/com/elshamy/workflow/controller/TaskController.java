@@ -3,6 +3,7 @@ package com.elshamy.workflow.controller;
 import com.elshamy.workflow.dto.AssignTaskRequestDTO;
 import com.elshamy.workflow.dto.TaskRequestDTO;
 import com.elshamy.workflow.dto.TaskResponseDTO;
+import com.elshamy.workflow.dto.TaskUpdateRequestDTO;
 import com.elshamy.workflow.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -51,4 +52,20 @@ public class TaskController {
                 taskService.assignTask(taskId, request.userId())
         );
     }
+
+
+    @PatchMapping("/tasks/{id}")
+    public ResponseEntity<TaskResponseDTO> updateTask(
+            @PathVariable("id") Long taskId, @Valid @RequestBody TaskUpdateRequestDTO taskUpdateRequestDTO
+            ){
+        return ResponseEntity.ok(taskService.updateTask(taskId, taskUpdateRequestDTO));
+    }
+
+
+    @DeleteMapping("/tasks/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable("id") Long taskId) {
+        taskService.deleteTask(taskId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
