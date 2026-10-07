@@ -3,6 +3,7 @@ package com.elshamy.workflow.service;
 
 import com.elshamy.workflow.dto.TaskRequestDTO;
 import com.elshamy.workflow.dto.TaskResponseDTO;
+import com.elshamy.workflow.dto.TaskUpdateRequestDTO;
 import com.elshamy.workflow.entity.Project;
 import com.elshamy.workflow.entity.Task;
 import com.elshamy.workflow.entity.User;
@@ -11,6 +12,7 @@ import com.elshamy.workflow.exception.ResourceNotFoundException;
 import com.elshamy.workflow.repository.ProjectRepository;
 import com.elshamy.workflow.repository.TaskRepository;
 import com.elshamy.workflow.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
 
@@ -106,4 +108,37 @@ public class TaskService {
     }
 
 
+    public TaskResponseDTO updateTask(Long taskId, TaskUpdateRequestDTO taskUpdateRequestDTO) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+
+        if (taskUpdateRequestDTO.title() != null && !taskUpdateRequestDTO.title().isBlank()) {
+            task.setTitle(taskUpdateRequestDTO.title());
+        }
+
+        if (taskUpdateRequestDTO.description() != null) {
+            task.setDescription(taskUpdateRequestDTO.description());
+        }
+
+        if (taskUpdateRequestDTO.status() != null) {
+            task.setStatus(taskUpdateRequestDTO.status());
+        }
+
+        if (taskUpdateRequestDTO.priority() != null) {
+            task.setPriority(taskUpdateRequestDTO.priority());
+        }
+
+        if (taskUpdateRequestDTO.dueDate() != null) {
+            task.setDueDate(taskUpdateRequestDTO.dueDate());
+        }
+
+        Task updatedTask = taskRepository.save(task);
+        return toDTO(updatedTask);
+    }
+
+    public void deleteTask(Long taskId){
+        Task task = taskRepository.findById(taskId).orElseThrow(()
+                -> new ResourceNotFoundException("Task not found with id: " + taskId));
+        taskRepository.delete(task);
+    }
 }
