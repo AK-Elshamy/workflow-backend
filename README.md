@@ -6,3 +6,5 @@ Collaborative work
 Collaborative work with a7med-khalid
 Final test for Co-author badge
 Pair Extraordinaire Badge Unlock
+Pair Extraordinaire Badge Unlock
+Pair Extraordinaire Badge Unlock
