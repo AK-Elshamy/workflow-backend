@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -69,4 +70,35 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
+
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponseDTO> handleConflictException(
+            ConflictException exception,
+            HttpServletRequest request) {
+
+        ErrorResponseDTO response = new ErrorResponseDTO(
+                HttpStatus.CONFLICT.value(),
+                exception.getMessage(),
+                LocalDateTime.now(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponseDTO> handleBadCredentials(BadCredentialsException exception, HttpServletRequest request) {
+        ErrorResponseDTO response = new ErrorResponseDTO(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Invalid username or password",
+                LocalDateTime.now(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
 }
+
+
