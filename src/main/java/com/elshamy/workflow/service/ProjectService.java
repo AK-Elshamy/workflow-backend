@@ -9,9 +9,9 @@ import com.elshamy.workflow.enums.Role;
 import com.elshamy.workflow.exception.ResourceNotFoundException;
 import com.elshamy.workflow.repository.ProjectRepository;
 import com.elshamy.workflow.security.CurrentUserService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import java.util.List;
-
 
 @Service
 public class ProjectService {
@@ -60,7 +60,6 @@ public class ProjectService {
         return projects.stream().map(this::toDTO).toList();
     }
 
-
     public ProjectResponseDTO getProjectById(Long id) {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -91,11 +90,31 @@ public class ProjectService {
         return toDTO(project);
     }
 
+    private Project getProjectForManagement(Long id) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Project not found with id: " + id
+                        )
+                );
+
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+        boolean isOwner = project.getOwner().getId()
+                .equals(currentUser.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException(
+                    "You are not allowed to manage this project"
+            );
+        }
+
+        return project;
+    }
 
     public ProjectResponseDTO updateProject(ProjectUpdateRequestDTO request, Long id){
-        Project project = projectRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("project not found with id: " + id)
-        );
+        Project project = getProjectForManagement(id);
 
         project.setName(request.name());
         project.setDescription(request.description());
@@ -104,11 +123,7 @@ public class ProjectService {
     }
 
     public void deleteProject(Long id){
-        if(! projectRepository.existsById(id)){
-            throw new ResourceNotFoundException("Project not found with id: " + id);
-        }
-        projectRepository.deleteById(id);
+        Project project = getProjectForManagement(id);
+        projectRepository.delete(project);
     }
-
-
 }
