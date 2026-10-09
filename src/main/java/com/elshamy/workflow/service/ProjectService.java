@@ -5,6 +5,7 @@ import com.elshamy.workflow.dto.ProjectResponseDTO;
 import com.elshamy.workflow.dto.ProjectUpdateRequestDTO;
 import com.elshamy.workflow.entity.Project;
 import com.elshamy.workflow.entity.User;
+import com.elshamy.workflow.enums.Role;
 import com.elshamy.workflow.exception.ResourceNotFoundException;
 import com.elshamy.workflow.repository.ProjectRepository;
 import com.elshamy.workflow.security.CurrentUserService;
@@ -48,17 +49,48 @@ public class ProjectService {
     }
 
     public List<ProjectResponseDTO> getAllProjects(){
-        return projectRepository.findAll().stream().map(this::toDTO).toList();
+        User currentUser = currentUserService.getCurrentUser();
+        List<Project> projects;
+
+        if(currentUser.getRole() == Role.ADMIN){
+            projects = projectRepository.findAll();
+        }else {
+            projects = projectRepository.findVisibleToUser(currentUser.getId());
+        }
+        return projects.stream().map(this::toDTO).toList();
     }
 
-    public ProjectResponseDTO getProjectById(Long id){
+
+    public ProjectResponseDTO getProjectById(Long id) {
+        User currentUser = currentUserService.getCurrentUser();
+
         Project project = projectRepository.findById(id)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Project not found with id: " + id)
+                        new ResourceNotFoundException(
+                                "Project not found with id: " + id
+                        )
                 );
+
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+
+        boolean isOwner = project.getOwner()
+                .getId()
+                .equals(currentUser.getId());
+
+        boolean isMember = project.getMembers().stream()
+                .anyMatch(member ->
+                        member.getId().equals(currentUser.getId())
+                );
+
+        if (!isAdmin && !isOwner && !isMember) {
+            throw new ResourceNotFoundException(
+                    "Project not found with id: " + id
+            );
+        }
 
         return toDTO(project);
     }
+
 
     public ProjectResponseDTO updateProject(ProjectUpdateRequestDTO request, Long id){
         Project project = projectRepository.findById(id).orElseThrow(
