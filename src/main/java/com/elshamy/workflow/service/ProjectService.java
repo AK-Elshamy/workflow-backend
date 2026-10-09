@@ -7,7 +7,7 @@ import com.elshamy.workflow.entity.Project;
 import com.elshamy.workflow.entity.User;
 import com.elshamy.workflow.exception.ResourceNotFoundException;
 import com.elshamy.workflow.repository.ProjectRepository;
-import com.elshamy.workflow.repository.UserRepository;
+import com.elshamy.workflow.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -15,17 +15,21 @@ import java.util.List;
 @Service
 public class ProjectService {
     private final ProjectRepository projectRepository;
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository) {
+    public ProjectService(
+            ProjectRepository projectRepository,
+            CurrentUserService currentUserService) {
         this.projectRepository = projectRepository;
-        this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     public ProjectResponseDTO createProject(ProjectRequestDTO projectRequestDTO){
-        Project project = new Project(projectRequestDTO.name(), projectRequestDTO.description());
-        User owner = userRepository.findById(1L)
-                .orElseThrow(() -> new ResourceNotFoundException("Owner not found with id: 1"));
+        User owner = currentUserService.getCurrentUser();
+        Project project = new Project(
+                projectRequestDTO.name(),
+                projectRequestDTO.description()
+        );
         project.setOwner(owner);
         Project projectSaved = projectRepository.save(project);
         return toDTO(projectSaved);

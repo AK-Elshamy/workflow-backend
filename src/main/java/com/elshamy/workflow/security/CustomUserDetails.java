@@ -32,4 +32,7 @@ public class CustomUserDetails implements UserDetails {
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
     }
+    public User getUser() {
+        return user;
+    }
 }
