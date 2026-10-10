@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -256,6 +257,152 @@ class CommentServiceTest {
 
         // Verify
         verify(commentRepository, never()).delete(any(Comment.class));
+    }
+
+
+    @Test
+    void getComments_WhenUserOwnsProject_ShouldReturnComments() {
+        // Arrange
+        Comment comment = new Comment();
+        comment.setId(30L);
+        comment.setContent("Test comment");
+        comment.setTask(task);
+        comment.setAuthor(user);
+
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(taskRepository.findById(20L)).thenReturn(Optional.of(task));
+        when(commentRepository.findByTaskId(20L)).thenReturn(List.of(comment));
+
+        // Act
+        List<CommentResponseDTO> responses = commentService.getComments(20L);
+
+        // Assert
+        assertEquals(1, responses.size());
+        assertEquals("Test comment", responses.get(0).content());
+        assertEquals(30L, responses.get(0).id());
+
+        verify(commentRepository).findByTaskId(20L);
+    }
+
+    @Test
+    void getComments_WhenUserHasNoProjectAccess_ShouldThrowAccessDeniedException() {
+        // Arrange
+        User anotherUser = new User(
+                "anotheruser",
+                "another@example.com",
+                "encoded-password",
+                Role.USER
+        );
+        ReflectionTestUtils.setField(anotherUser, "id", 2L);
+
+        when(currentUserService.getCurrentUser()).thenReturn(anotherUser);
+        when(taskRepository.findById(20L)).thenReturn(Optional.of(task));
+
+        // Act & Assert
+        assertThrows(
+                AccessDeniedException.class,
+                () -> commentService.getComments(20L)
+        );
+
+        // Verify: لا يجب جلب التعليقات بعد رفض الوصول
+        verify(commentRepository, never()).findByTaskId(anyLong());
+    }
+
+    @Test
+    void updateComment_WhenCommentDoesNotExist_ShouldThrowResourceNotFoundException() {
+        // Arrange
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(commentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        CommentUpdateDTO request =
+                new CommentUpdateDTO("Updated content");
+
+        // Act & Assert
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> commentService.updateComment(999L, request)
+        );
+
+        // Verify: لا يجب حفظ أي تعديل
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    void deleteComment_WhenCommentDoesNotExist_ShouldThrowResourceNotFoundException() {
+        // Arrange
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(commentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> commentService.deleteComment(999L)
+        );
+
+        // Verify: لا يجب حذف أي تعليق
+        verify(commentRepository, never()).delete(any(Comment.class));
+    }
+
+
+    @Test
+    void updateComment_WhenUserIsAdmin_ShouldUpdateComment() {
+        // Arrange
+        User admin = new User(
+                "admin",
+                "admin@example.com",
+                "encoded-password",
+                Role.ADMIN
+        );
+        ReflectionTestUtils.setField(admin, "id", 3L);
+
+        Comment comment = new Comment();
+        comment.setId(30L);
+        comment.setContent("Original content");
+        comment.setTask(task);
+        comment.setAuthor(user);
+
+        when(currentUserService.getCurrentUser()).thenReturn(admin);
+        when(commentRepository.findById(30L)).thenReturn(Optional.of(comment));
+        when(commentRepository.save(any(Comment.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CommentUpdateDTO request =
+                new CommentUpdateDTO("Updated by admin");
+
+        // Act
+        CommentResponseDTO response =
+                commentService.updateComment(30L, request);
+
+        // Assert
+        assertEquals("Updated by admin", response.content());
+        verify(commentRepository).save(comment);
+    }
+
+    @Test
+    void deleteComment_WhenUserIsAdmin_ShouldDeleteComment() {
+        // Arrange
+        User admin = new User(
+                "admin",
+                "admin@example.com",
+                "encoded-password",
+                Role.ADMIN
+        );
+        ReflectionTestUtils.setField(admin, "id", 3L);
+
+        Comment comment = new Comment();
+        comment.setId(30L);
+        comment.setContent("Another user's comment");
+        comment.setTask(task);
+        comment.setAuthor(user);
+
+        when(currentUserService.getCurrentUser()).thenReturn(admin);
+        when(commentRepository.findById(30L)).thenReturn(Optional.of(comment));
+
+        // Act
+        commentService.deleteComment(30L);
+
+        // Assert
+        verify(commentRepository).delete(comment);
     }
 
 }
