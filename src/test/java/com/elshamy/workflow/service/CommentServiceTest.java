@@ -405,4 +405,79 @@ class CommentServiceTest {
         verify(commentRepository).delete(comment);
     }
 
+    @Test
+    void addComment_WhenUserIsProjectMember_ShouldSaveAndReturnComment() {
+        // Arrange
+        User member = new User(
+                "member",
+                "member@example.com",
+                "encoded-password",
+                Role.USER
+        );
+        ReflectionTestUtils.setField(member, "id", 2L);
+
+        project.getMembers().add(member);
+
+        when(currentUserService.getCurrentUser()).thenReturn(member);
+        when(taskRepository.findById(20L)).thenReturn(Optional.of(task));
+
+        when(commentRepository.save(any(Comment.class)))
+                .thenAnswer(invocation -> {
+                    Comment comment = invocation.getArgument(0);
+                    comment.setId(31L);
+                    return comment;
+                });
+
+        CommentRequestDTO request =
+                new CommentRequestDTO("Comment from project member");
+
+        // Act
+        CommentResponseDTO response =
+                commentService.addComment(20L, request);
+
+        // Assert
+        assertEquals(31L, response.id());
+        assertEquals("Comment from project member", response.content());
+        assertEquals(2L, response.authorId());
+
+        verify(commentRepository).save(any(Comment.class));
+    }
+
+    @Test
+    void addComment_WhenUserIsAdmin_ShouldSaveAndReturnComment() {
+        // Arrange
+        User admin = new User(
+                "admin",
+                "admin@example.com",
+                "encoded-password",
+                Role.ADMIN
+        );
+        ReflectionTestUtils.setField(admin, "id", 3L);
+
+        when(currentUserService.getCurrentUser()).thenReturn(admin);
+        when(taskRepository.findById(20L)).thenReturn(Optional.of(task));
+
+        when(commentRepository.save(any(Comment.class)))
+                .thenAnswer(invocation -> {
+                    Comment comment = invocation.getArgument(0);
+                    comment.setId(32L);
+                    return comment;
+                });
+
+        CommentRequestDTO request =
+                new CommentRequestDTO("Admin comment");
+
+        // Act
+        CommentResponseDTO response =
+                commentService.addComment(20L, request);
+
+        // Assert
+        assertEquals(32L, response.id());
+        assertEquals("Admin comment", response.content());
+        assertEquals(3L, response.authorId());
+
+        verify(commentRepository).save(any(Comment.class));
+    }
+
+
 }
