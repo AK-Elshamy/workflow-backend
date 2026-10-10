@@ -304,7 +304,7 @@ class CommentServiceTest {
                 () -> commentService.getComments(20L)
         );
 
-        // Verify: لا يجب جلب التعليقات بعد رفض الوصول
+        // Verify: Should not fetch comments after access denial
         verify(commentRepository, never()).findByTaskId(anyLong());
     }
 
@@ -323,7 +323,7 @@ class CommentServiceTest {
                 () -> commentService.updateComment(999L, request)
         );
 
-        // Verify: لا يجب حفظ أي تعديل
+        // Verify: Should not save any modification
         verify(commentRepository, never()).save(any(Comment.class));
     }
 
@@ -339,7 +339,7 @@ class CommentServiceTest {
                 () -> commentService.deleteComment(999L)
         );
 
-        // Verify: لا يجب حذف أي تعليق
+        // Verify: Should not delete any comment
         verify(commentRepository, never()).delete(any(Comment.class));
     }
 
